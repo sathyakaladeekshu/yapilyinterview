@@ -1,10 +1,5 @@
 package com.yapily.interview.service;
 
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
-import com.google.api.client.json.gson.GsonFactory;
-import com.google.api.services.translate.Translate;
-import com.google.api.services.translate.model.TranslationsListResponse;
-import com.google.api.services.translate.model.TranslationsResource;
 import com.yapily.interview.domain.Character;
 import com.yapily.interview.domain.CharacterDataContainer;
 import com.yapily.interview.domain.CharacterDataWrapper;
@@ -25,7 +20,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Arrays;
 
-
 import static com.yapily.interview.utility.CommonUtility.generateMD5Hash;
 
 @Service
@@ -37,6 +31,9 @@ public class CharacterService {
 
     @Autowired
     RestTemplate restTemplate;
+
+    @Autowired
+    TranslationService translationService;
 
     static List<Integer> characterIdList = new ArrayList<>();
 
@@ -60,28 +57,12 @@ public class CharacterService {
 
         String url = "http://gateway.marvel.com/v1/public/characters/"+characterId+"?ts="+uuidString+"&apikey="+key.get().getPublic_key()+"&hash="+hash;
         CharacterDataContainer characterDataContainer = getCharacterDetails(url);
-        Optional< Character> character = Arrays.stream(characterDataContainer.getResults()).findFirst();
+        var character = Arrays.stream(characterDataContainer.getResults()).findFirst();
 
+        String translateKey = keysRepository.findById(2).get().getPrivate_key();
         // Only if the language field is present then translation is needed
-        if (!language.isEmpty()) {
-            Translate t = new Translate.Builder(
-                    GoogleNetHttpTransport.newTrustedTransport()
-                    , GsonFactory.getDefaultInstance(), null)
-                    // Set your application name
-                    .setApplicationName("Yapily Character Service")
-                    .build();
-            Translate.Translations.List list = t.new Translations().list(
-                    //The character description is given as input for translation
-                    Arrays.asList(character.get().getDescription()),
-                    // Target language
-                    language.get());
-
-            list.setKey(keysRepository.findById(2).get().getPrivate_key());
-            TranslationsListResponse response = list.execute();
-            for (TranslationsResource translationsResource : response.getTranslations()) {
-                //The translated text is set in the description
-                character.get().setDescription(translationsResource.getTranslatedText());
-            }
+        if (language.isPresent()) {
+            character.get().setDescription(translationService.translateString(language.get(),character.get().getDescription(),translateKey));
         }
         return character;
     }
@@ -110,10 +91,9 @@ public class CharacterService {
              Character[] characterArray = characterDataContainer.getResults();
              count = characterDataContainer.getCount();
 
-            for (int i = 0; i< characterArray.length;i++) {
-                Character character =  characterArray[i];
-                characterIdList.add(character.getId());
-            }
+             for (Character character : characterArray) {
+                 characterIdList.add(character.getId());
+             }
             //offset skips the records that are read already
             initialOffset = initialOffset+100;
         }while (count >0);// As long as there are more records to be fetched from the Marvel api
@@ -121,7 +101,7 @@ public class CharacterService {
     }
 
     /**
-     * This method holds the details of the Characters feteched in memory
+     * This method holds the details of the Characters fetched in memory
      * @return List of Character ids from the server memory
      */
     public List<Integer> getCharactersFromCache() {
@@ -136,7 +116,7 @@ public class CharacterService {
      */
     private CharacterDataContainer getCharacterDetails(String url) {
         CharacterDataWrapper characterDataWrapper =restTemplate.getForObject(url,CharacterDataWrapper.class);
-        CharacterDataContainer characterDataContainer = characterDataWrapper.getData();
-        return characterDataContainer;
+        assert characterDataWrapper != null;
+        return characterDataWrapper.getData();
     }
 }

@@ -8,19 +8,6 @@ public class Character {
     int id;
     String name;
     String description;
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public Image getThumbnail() {
-        return thumbnail;
-    }
-
-    public void setThumbnail(Image thumbnail) {
-        this.thumbnail = thumbnail;
-    }
-
     Image thumbnail ;
 
     public Character() {
@@ -31,10 +18,6 @@ public class Character {
         this.id = id;
         this.description = description;
         this.name = name;
-    }
-
-    public String getDescription() {
-        return description;
     }
 
     public int getId() {
@@ -49,8 +32,16 @@ public class Character {
         this.name = name;
     }
 
+    public String getDescription() {
+        return description;
+    }
+
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public Image getThumbnail() {
+        return thumbnail;
     }
 
 }

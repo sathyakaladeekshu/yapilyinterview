@@ -4,15 +4,8 @@ public class Image {
     String path;
     String extension;
 
-    public Image()
-    {
+    public Image() {
         super();
-    }
-
-    public Image(String path,String extension)
-    {
-        this.path = path;
-        this.extension = extension;
     }
 
     public String getPath() {
